@@ -50,7 +50,7 @@ Login server string (fegdjangoregistry.azurecr.io/)
     -> firewallName = AllowAll
         -> Ouput:
         {
-          "connectionString": "postgresql://sincerewalrus2:ZUgOGoFhuPunxJ78CUDxvA@postgres-serv.postgres.database.azure.com/postgres?sslmode=require",
+          "connectionString": "postgresql://sincerewalrus2:ZUgDxvostgres.database.azure.com/postgres?sslmode=require",
           "databaseName": "nc_tutorials_db",
           "firewallName": "AllowAll_2022-10-23_17-1-39",
           "host": "postgres-serv.postgres.database.azure.com",
