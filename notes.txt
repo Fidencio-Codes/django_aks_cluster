@@ -1,0 +1,140 @@
+Exercise: Deploy containerized Django application through Azure Kubernetes Service (AKS)
+- Kubernetes container orchestration 
+- syntax practice 
+- "kubectl, create deployment, expose, apply" commands
+
+
+# Azure services Used # 
+Resource group (django-apps)
+Kubernetes cluster (djangocluster)
+Azure container registry (fegdjangoregistry)
+Login server string (fegdjangoregistry.azurecr.io/)
+
+
+# Built Docker image locally # 
+- workshop4 directory contains Tutorials Django app, and a Dockerfile 
+- built the image
+    -> ran: "docker build -t workshop4"
+    -> successful build 
+
+
+# Pushed Docker image to Azure container registry # 
+1. az cli login on bash terminal: ran "az login"
+- browser login page will load 
+
+2. azure container registry login
+- ran: "az acr login -n fegdjangoregistry"
+    -> output: login successful 
+
+3. tagged local image 
+- ran: "docker tag workshop4:latest fegdjangoregistry.azurecr.io/workshop4:v1"
+
+4. pushed image to azure registry
+- ran: "docker push fegdjangoregistry.azurecr.io/workshop4:v1"
+    -> confirmed image was pushed in azure portal 
+    -> (workshop4-repo.png) screenshot provided 
+
+
+# Create Postgres server on Azure cloud # 
+- Postgres server instance in azure cloud using 'flexible-server' server type
+
+- ran: "az postgres flexible-server create --resource-group django-apps --name postgres-serv --database-name nc_tutorials_db --public-access all"
+    -> using flexible-server as server type 
+    -> postgres server being created, named postgres-serv
+    -> postgres datbase created, named nc_tutorials_db
+    -> granted public access to 'all' as the argument 
+    
+    output contains "host", "password", "username"
+    -> copy, needed for Kubernetes YAML file 
+    -> confirmed databaseName = nc_tutorials_db
+    -> firewallName = AllowAll
+        -> Ouput:
+        {
+          "connectionString": "postgresql://sincerewalrus2:ZUgOGoFhuPunxJ78CUDxvA@postgres-serv.postgres.database.azure.com/postgres?sslmode=require",
+          "databaseName": "nc_tutorials_db",
+          "firewallName": "AllowAll_2022-10-23_17-1-39",
+          "host": "postgres-serv.postgres.database.azure.com",
+          "id": "/subscriptions/0337aa65-029b-4696-8094-ea8bc1d54828/resourceGroups/django-apps/providers/Microsoft.DBforPostgreSQL/flexibleServers/postgres-serv",
+          "location": "East US",
+          "password": "ZUgOGoFhuPunxJ78CUDxvA",
+          "resourceGroup": "django-apps",
+          "skuname": "Standard_D2s_v3",
+          "username": "sincerewalrus2",
+          "version": "13"
+        }
+
+
+# Connected to AKS cluster # 
+- ran: "az aks get-credentials -n djangocluster -g django-apps"
+    -> output: merged djangocluster 
+    -> confirmed access to cluster
+        - ran: "kubectl get nodes"
+        - output: node available 
+
+
+# updating kubernetes yml file # 
+- Django application setup environment variables 
+- updated yml file to read database host, user, password and database name
+
+
+# Deploy application to AKS cluster #
+- 'kubectl apply' cmd creates a deployment and service for the application
+
+1. in same folder as yml file:
+    -> ran: 'kubectl apply -f workshop4-deployment.yml'
+    -> output: 
+    deployment.apps/workshop4 created
+    service/workshop4-service created
+
+2. confirmed deployment
+    -> ran: "kubectl get deployments"
+    -> output: Ready stage 1/1
+    -> azure portal: kubernetes services > djangocluster > workloads > deployments > workshop4
+        -> confirmed workshop4 deployment was successful (deployment.png) screenshot
+
+3. checked service
+- ran: "kubectl get services"
+    -> workshop4-service running
+    output: workshop4-service   LoadBalancer   10.0.222.150   52.151.225.243   8000:31717/TCP   9m22s
+    -> external IP: 52.151.225.243
+
+
+# Run migrations
+- in bash terminal workshop4 folder: ran "kubectl get pods"
+    -> workshop4-57fc8f67d-9ffj9   1/1   Running   0  12m
+    -> workshop4 running 
+
+- confirmed access to Django app files 
+    -> ran: 'kubectl exec workshop4-57fc8f67d-9ffj9 -- ls'
+    -> output: 
+        manage.py
+        nc_tutorials
+        requirements.txt
+        static
+        tutorials
+        users
+
+- generated migrate file for Tutorial table
+    -> ran: 'kubectl exec workshop4-57fc8f67d-9ffj9 -- python manage.py makemigrations'
+    output: 
+    Migrations for 'tutorials':
+    tutorials/migrations/0001_initial.py
+    - Create model Tutorial
+
+- migrated and created table in Postgres database 
+    -> ran: 'kubectl exec workshop4-57fc8f67d-9ffj9 -- python manage.py migrate'
+    Output: migrations applied 
+    -> able to see in browser 
+        -> obtained external ip from last section, http://52.151.225.243:8000
+
+- Django tutorials application now running
+
+
+# POST request to the database # 
+- Using Insomnia Application 
+- created JSON body for POST request to http://52.151.225.243:8000/api/tutorials/
+    -> 201 Created, HTTP request successful
+    -> screenshots provided of JSON body entry and POST request 
+
+
+# Made sure to Delete resource group and all resources from Azure Portal related to this project #
