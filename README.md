@@ -22,4 +22,4 @@ Exercise: Deploy containerized Django application through Azure Kubernetes Servi
     - Deployed application to AKS cluster
     - Ran migrations
     - POST request sent to the database 
-    - Made sure to Delete resource group and all resources from Azure Portal related to this project
+    - Made sure to Delete all resources from Azure Portal related to this project to avoid fees
